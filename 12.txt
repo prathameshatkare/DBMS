@@ -1,0 +1,178 @@
+// Assuming the MongoDB collections are as follows:
+// employee (employee_name, street, city)
+// works (employee_name, company_name, salary)
+// company (company_name, city)
+// manages (employee_name, manager_name)
+
+// 1. Find the names of all employees who work for "First Bank Corporation"
+db.works.aggregate([
+  {
+    $match: { company_name: "First Bank Corporation" }
+  },
+  {
+    $lookup: {
+      from: "employee",
+      localField: "employee_name",
+      foreignField: "employee_name",
+      as: "employee_details"
+    }
+  },
+  {
+    $unwind: "$employee_details"
+  },
+  {
+    $project: {
+      "employee_name": "$employee_details.employee_name"
+    }
+  }
+]);
+
+// 2. Find the names, street addresses, and cities of residence of all employees who work for "First Bank Corporation" and earn more than $10,000
+db.works.aggregate([
+  {
+    $match: { company_name: "First Bank Corporation", salary: { $gt: 10000 } }
+  },
+  {
+    $lookup: {
+      from: "employee",
+      localField: "employee_name",
+      foreignField: "employee_name",
+      as: "employee_details"
+    }
+  },
+  {
+    $unwind: "$employee_details"
+  },
+  {
+    $project: {
+      "employee_name": "$employee_details.employee_name",
+      "street": "$employee_details.street",
+      "city": "$employee_details.city"
+    }
+  }
+]);
+
+// 3. Find all employees who live in the same cities and on the same streets as their managers
+db.manages.aggregate([
+  {
+    $lookup: {
+      from: "employee",
+      localField: "employee_name",
+      foreignField: "employee_name",
+      as: "employee_details"
+    }
+  },
+  {
+    $lookup: {
+      from: "employee",
+      localField: "manager_name",
+      foreignField: "employee_name",
+      as: "manager_details"
+    }
+  },
+  {
+    $unwind: "$employee_details"
+  },
+  {
+    $unwind: "$manager_details"
+  },
+  {
+    $match: {
+      $expr: {
+        $and: [
+          { $eq: ["$employee_details.street", "$manager_details.street"] },
+          { $eq: ["$employee_details.city", "$manager_details.city"] }
+        ]
+      }
+    }
+  },
+  {
+    $project: {
+      "employee_name": "$employee_details.employee_name"
+    }
+  }
+]);
+
+// 4. Find all employees who earn more than each employee of "Small Bank Corporation"
+db.works.aggregate([
+  {
+    $match: { company_name: "Small Bank Corporation" }
+  },
+  {
+    $group: {
+      _id: "$company_name",
+      min_salary: { $min: "$salary" }
+    }
+  },
+  {
+    $lookup: {
+      from: "works",
+      localField: "min_salary",
+      foreignField: "salary",
+      as: "higher_paid_employees"
+    }
+  },
+  {
+    $unwind: "$higher_paid_employees"
+  },
+  {
+    $project: {
+      "employee_name": "$higher_paid_employees.employee_name"
+    }
+  }
+]);
+
+// 5. Find all employees who earn more than the average salary of all employees of their company
+db.works.aggregate([
+  {
+    $group: {
+      _id: "$company_name",
+      avg_salary: { $avg: "$salary" }
+    }
+  },
+  {
+    $lookup: {
+      from: "works",
+      localField: "avg_salary",
+      foreignField: "salary",
+      as: "higher_paid_employees"
+    }
+  },
+  {
+    $unwind: "$higher_paid_employees"
+  },
+  {
+    $match: {
+      $expr: {
+        $gt: ["$higher_paid_employees.salary", "$avg_salary"]
+      }
+    }
+  },
+  {
+    $project: {
+      "employee_name": "$higher_paid_employees.employee_name"
+    }
+  }
+]);
+
+// 6. Find the company that has the smallest payroll
+db.works.aggregate([
+  {
+    $group: {
+      _id: "$company_name",
+      total_payroll: { $sum: "$salary" }
+    }
+  },
+  {
+    $sort: { total_payroll: 1 }
+  },
+  {
+    $limit: 1
+  },
+  {
+    $project: {
+      "company_name": "$_id",
+      "total_payroll": 1
+    }
+  }
+]);

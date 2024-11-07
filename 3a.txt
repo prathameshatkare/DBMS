@@ -1,0 +1,40 @@
+-- 1. Find names and salaries of employees with a higher salary than the employee whose last_name is 'Singh'
+SELECT E1.First_name, E1.Last_name, E1.Salary
+FROM Employee E1
+WHERE E1.Salary > (
+    SELECT E2.Salary
+    FROM Employee E2
+    WHERE E2.Last_name = 'Singh'
+);
+
+-- 2. Find names of employees who have a manager and work for a department based in the United States
+SELECT E.First_name, E.Last_name
+FROM Employee E
+JOIN Departments D ON E.Department_id = D.Department_id
+JOIN Locations L ON D.Location_id = L.Location_id
+WHERE E.Manager_id IS NOT NULL
+AND L.Country_id = 'US';
+
+-- 3. Find the names of all employees who work in the IT department
+SELECT E.First_name, E.Last_name
+FROM Employee E
+JOIN Departments D ON E.Department_id = D.Department_id
+WHERE D.Department_name = 'IT';
+
+-- 4. Find names and salary of employees whose salary is greater than the average salary
+SELECT E.First_name, E.Last_name, E.Salary
+FROM Employee E
+WHERE E.Salary > (
+    SELECT AVG(Salary)
+    FROM Employee
+);
+
+-- 5. Find names and salary of employees who earn more than the average salary and work in any IT department
+SELECT E.First_name, E.Last_name, E.Salary
+FROM Employee E
+JOIN Departments D ON E.Department_id = D.Department_id
+WHERE E.Salary > (
+    SELECT AVG(Salary)
+    FROM Employee
+)
+AND D.Department_name = 'IT';

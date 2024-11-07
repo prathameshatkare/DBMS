@@ -1,0 +1,44 @@
+DECLARE
+    CURSOR emp_cursor IS
+        SELECT eno, name, salary
+        FROM Emp;
+
+    v_eno Emp.eno%TYPE;
+    v_name Emp.name%TYPE;
+    v_salary Emp.salary%TYPE;
+    v_bonus NUMBER;
+
+BEGIN
+    -- Open the cursor
+    OPEN emp_cursor;
+
+    LOOP
+        FETCH emp_cursor INTO v_eno, v_name, v_salary;
+
+        -- Exit when no more rows are found
+        EXIT WHEN emp_cursor%NOTFOUND;
+
+        -- Determine the bonus amount
+        IF v_salary > 4000 THEN
+            v_bonus := 5000;
+        ELSE
+            v_bonus := 1000;
+        END IF;
+
+        -- Display the employee details and the bonus
+        DBMS_OUTPUT.PUT_LINE('Employee ID: ' || v_eno || ', Name: ' || v_name || ', Bonus: ' || v_bonus);
+
+        -- Update the salary with the bonus
+        UPDATE Emp
+        SET salary = salary + v_bonus
+        WHERE eno = v_eno;
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE emp_cursor;
+
+    DBMS_OUTPUT.PUT_LINE('Bonus applied successfully.');
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END;

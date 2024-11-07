@@ -1,0 +1,85 @@
+// 1. Create a collection named 'books'
+db.createCollection("books");
+
+// 2. Insert 5 records with fields TITLE, DESCRIPTION, BY, URL, TAGS, and LIKES
+db.books.insertMany([
+  {
+    title: "MongoDB Basics",
+    description: "Introduction to MongoDB.",
+    by: "john",
+    url: "https://example.com/mongodb-basics",
+    tags: ["Database", "MongoDB", "NoSQL"],
+    likes: 120
+  },
+  {
+    title: "NoSQL Overview",
+    description: "Overview of NoSQL databases.",
+    by: "alice",
+    url: "https://example.com/nosql-overview",
+    tags: ["Database", "NoSQL"],
+    likes: 85
+  },
+  {
+    title: "Advanced MongoDB",
+    description: "In-depth guide to MongoDB.",
+    by: "john",
+    url: "https://example.com/advanced-mongodb",
+    tags: ["Database", "MongoDB", "Advanced"],
+    likes: 150
+  },
+  {
+    title: "JavaScript Fundamentals",
+    description: "Fundamentals of JavaScript programming.",
+    by: "bob",
+    url: "https://example.com/js-fundamentals",
+    tags: ["Programming", "JavaScript"],
+    likes: 200
+  },
+  {
+    title: "Learn Python",
+    description: "Python basics and advanced concepts.",
+    by: "alice",
+    url: "https://example.com/learn-python",
+    tags: ["Programming", "Python"],
+    likes: 180
+  }
+]);
+
+// 3. Insert 1 more document with additional field of username and comments
+db.books.insertOne({
+  title: "TOC Book",
+  description: "Theory of Computation Concepts.",
+  by: "john",
+  url: "https://example.com/toc-book",
+  tags: ["Computer Science", "Theory of Computation"],
+  likes: 90,
+  username: "john_doe",
+  comments: "Great explanation of automata theory!"
+});
+
+// 4. Display all the documents whose title is 'mongodb'
+db.books.find({ title: 'MongoDB Basics' }).pretty();
+
+// 5. Display all the documents whose title is 'mongodb' and written by 'john'
+db.books.find({ title: 'MongoDB Basics', by: 'john' }).pretty();
+
+// 6. Display all the documents whose likes are greater than 100 and whose title is either 'mongodb' or written by 'john'
+db.books.find({
+  $and: [
+    { likes: { $gt: 100 } },
+    { $or: [{ title: 'MongoDB Basics' }, { by: 'john' }] }
+  ]
+}).pretty();
+
+// 7. Delete the document titled 'NoSQL Overview'
+db.books.deleteOne({ title: 'NoSQL Overview' });
+
+// 8. Display the second document published by 'john'
+db.books.find({ by: 'john' }).skip(1).limit(1).pretty();
+
+// 9. Update the Author of 'TOC Book' to 'Vivek Kulkarni', if record does not exist a new document should be created
+db.books.updateOne(
+  { title: 'TOC Book' },
+  { $set: { by: 'Vivek Kulkarni' } },
+  { upsert: true }
+);

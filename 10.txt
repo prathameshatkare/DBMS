@@ -1,0 +1,87 @@
+// 1. Find the instructor of each student
+db.Student.aggregate([
+  {
+    $lookup: {
+      from: "Instructor",
+      localField: "Instructor_Id",
+      foreignField: "Instructor_Id",
+      as: "Instructor_Info"
+    }
+  },
+  {
+    $unwind: "$Instructor_Info"
+  },
+  {
+    $project: {
+      "Student_Name": 1,
+      "Instructor_Info.Instructor_Name": 1
+    }
+  }
+]);
+
+// 2. Find the student who is not having any instructor
+db.Student.find({
+  "Instructor_Id": { $exists: false }
+});
+
+// 3. Find the student who is not having any instructor as well as the instructor who is not having a student
+// Students without an instructor
+db.Student.find({
+  "Instructor_Id": { $exists: false }
+});
+
+// Instructors without any students
+db.Instructor.find({
+  "Instructor_Id": { $nin: db.Student.distinct("Instructor_Id") }
+});
+
+// 4. Find the students whose instructor's specialization is computer
+db.Student.aggregate([
+  {
+    $lookup: {
+      from: "Instructor",
+      localField: "Instructor_Id",
+      foreignField: "Instructor_Id",
+      as: "Instructor_Info"
+    }
+  },
+  {
+    $unwind: "$Instructor_Info"
+  },
+  {
+    $match: {
+      "Instructor_Info.Specialization": "Computer"
+    }
+  },
+  {
+    $project: {
+      "Student_Name": 1
+    }
+  }
+]);
+
+// 5. Create a view containing the total number of students whose instructor belongs to "Pune"
+db.createCollection("Pune_Instructor_Students", {
+  viewOn: "Student",
+  pipeline: [
+    {
+      $lookup: {
+        from: "Instructor",
+        localField: "Instructor_Id",
+        foreignField: "Instructor_Id",
+        as: "Instructor_Info"
+      }
+    },
+    {
+      $unwind: "$Instructor_Info"
+    },
+    {
+      $match: {
+        "Instructor_Info.Instructor_City": "Pune"
+      }
+    },
+    {
+      $count: "Total_Students"
+    }
+  ]
+});

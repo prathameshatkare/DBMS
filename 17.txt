@@ -1,0 +1,91 @@
+// 1. Create the 'books' collection
+db.createCollection("books");
+
+// 2. Insert sample records into the books collection
+db.books.insertMany([
+  {
+    title: "MongoDB Basics",
+    description: "Introduction to MongoDB.",
+    author: "john",
+    url: "https://example.com/mongodb-basics",
+    tags: ["Database", "MongoDB", "NoSQL"],
+    likes: 120
+  },
+  {
+    title: "Advanced MongoDB",
+    description: "In-depth guide to MongoDB.",
+    author: "john",
+    url: "https://example.com/advanced-mongodb",
+    tags: ["Database", "MongoDB", "Advanced"],
+    likes: 150
+  },
+  {
+    title: "JavaScript Fundamentals",
+    description: "Fundamentals of JavaScript programming.",
+    author: "alice",
+    url: "https://example.com/js-fundamentals",
+    tags: ["Programming", "JavaScript"],
+    likes: 200
+  },
+  {
+    title: "Learn Python",
+    description: "Python basics and advanced concepts.",
+    author: "john",
+    url: "https://example.com/learn-python",
+    tags: ["Programming", "Python"],
+    likes: 180
+  },
+  {
+    title: "NoSQL Overview",
+    description: "Overview of NoSQL databases.",
+    author: "john",
+    url: "https://example.com/nosql-overview",
+    tags: ["Database", "NoSQL"],
+    likes: 90
+  }
+]);
+
+// 3. Find the number of books published by author 'john'
+db.books.aggregate([
+  { $match: { author: "john" } },
+  { $count: "totalBooks" }
+]);
+
+// 4. Find the books which have minimum likes and maximum likes published by author 'john'
+db.books.aggregate([
+  { $match: { author: "john" } },
+  { $group: {
+    _id: null,
+    minLikes: { $min: "$likes" },
+    maxLikes: { $max: "$likes" }
+  }}
+]);
+
+// 5. Find the average number of likes of the books published by author 'john'
+db.books.aggregate([
+  { $match: { author: "john" } },
+  { $group: {
+    _id: null,
+    avgLikes: { $avg: "$likes" }
+  }}
+]);
+
+// 6. Find the first and last book published by author 'john'
+db.books.aggregate([
+  { $match: { author: "john" } },
+  { $sort: { _id: 1 } }, // Sorting by ascending order of '_id' to get the first document
+  { $limit: 1 } // First book
+]);
+
+db.books.aggregate([
+  { $match: { author: "john" } },
+  { $sort: { _id: -1 } }, // Sorting by descending order of '_id' to get the last document
+  { $limit: 1 } // Last book
+]);
+
+// 7. Create an index on author name
+db.books.createIndex({ author: 1 });
+
+// 8. Display the books published by author 'john' and check if it uses the index
+// To display books by author 'john' and check the index usage
+db.books.find({ author: "john" }).explain("executionStats");

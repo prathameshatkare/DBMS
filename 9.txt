@@ -1,0 +1,64 @@
+-- Create the Library Database
+CREATE DATABASE Library;
+USE Library;
+
+-- Create the Books Table
+CREATE TABLE Books (
+    AccNo INT PRIMARY KEY,
+    Title VARCHAR(255),
+    Author VARCHAR(255),
+    Publisher VARCHAR(255),
+    Count INT
+);
+
+-- Create the Library_Audit Table
+CREATE TABLE Library_Audit (
+    AccNo INT,
+    Title VARCHAR(255),
+    Author VARCHAR(255),
+    Publisher VARCHAR(255),
+    Count INT,
+    Action_Type VARCHAR(50),
+    Action_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create a BEFORE DELETE Trigger to Insert Records into Library_Audit Table
+DELIMITER $$
+
+CREATE TRIGGER before_delete_book
+BEFORE DELETE ON Books
+FOR EACH ROW
+BEGIN
+    INSERT INTO Library_Audit (AccNo, Title, Author, Publisher, Count, Action_Type)
+    VALUES (OLD.AccNo, OLD.Title, OLD.Author, OLD.Publisher, OLD.Count, 'DELETE');
+END $$
+
+DELIMITER ;
+
+-- Create an AFTER UPDATE Trigger to Insert Records into Library_Audit Table
+DELIMITER $$
+
+CREATE TRIGGER after_update_book
+AFTER UPDATE ON Books
+FOR EACH ROW
+BEGIN
+    INSERT INTO Library_Audit (AccNo, Title, Author, Publisher, Count, Action_Type)
+    VALUES (NEW.AccNo, NEW.Title, NEW.Author, NEW.Publisher, NEW.Count, 'UPDATE');
+END $$
+
+DELIMITER ;
+
+-- Insert Sample Data into the Books Table
+INSERT INTO Books (AccNo, Title, Author, Publisher, Count) 
+VALUES 
+    (1, 'Introduction to SQL', 'John Doe', 'TechPublisher', 5),
+    (2, 'Advanced Database Management', 'Jane Smith', 'DataPress', 3);
+
+-- Delete a Record from the Books Table (Triggers BEFORE DELETE)
+DELETE FROM Books WHERE AccNo = 1;
+
+-- Update a Record in the Books Table (Triggers AFTER UPDATE)
+UPDATE Books SET Count = 10 WHERE AccNo = 2;
+
+-- Check the Library_Audit Table for Logs
+SELECT * FROM Library_Audit;

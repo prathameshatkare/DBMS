@@ -1,0 +1,18 @@
+CREATE OR REPLACE TRIGGER work_centers_insert_trigger
+AFTER INSERT ON WorkCenters
+FOR EACH ROW
+DECLARE
+  v_total_capacity NUMBER;
+BEGIN
+  -- Update the WorkCenterStats table with the new total capacity
+  SELECT SUM(capacity) INTO v_total_capacity
+  FROM WorkCenters;
+
+  UPDATE WorkCenterStats
+  SET total_capacity = v_total_capacity;
+
+  -- Log the inserted record
+  INSERT INTO WorkCentersLog (work_center_id, capacity, updated_at)
+  VALUES (:NEW.work_center_id, :NEW.capacity, CURRENT_TIMESTAMP);
+END;
+/

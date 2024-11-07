@@ -1,0 +1,52 @@
+DELIMITER $$
+
+CREATE PROCEDURE CalculateFine(IN p_Roll_no INT, IN p_NameofBook VARCHAR(255))
+BEGIN
+    DECLARE v_Days INT;
+    DECLARE v_FineAmount INT;
+    DECLARE v_DateofIssue DATE;
+    DECLARE v_Status CHAR(1);
+    DECLARE Fine_Exception EXCEPTION;
+
+    -- Get the DateofIssue and Status for the provided Roll_no and NameofBook
+    SELECT DateofIssue, Status INTO v_DateofIssue, v_Status
+    FROM Borrower
+    WHERE Roll_no = p_Roll_no AND NameofBook = p_NameofBook;
+
+    -- Check if the book is already returned
+    IF v_Status = 'R' THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Book already returned';
+    END IF;
+
+    -- Calculate the number of days since the book was issued
+    SET v_Days = DATEDIFF(CURDATE(), v_DateofIssue);
+
+    -- Determine fine based on the number of days
+    IF v_Days BETWEEN 15 AND 30 THEN
+        SET v_FineAmount = (v_Days - 15) * 5;
+    ELSEIF v_Days > 30 THEN
+        SET v_FineAmount = (v_Days - 30) * 50 + (15 * 5);
+    ELSE
+        SET v_FineAmount = 0;
+    END IF;
+
+    -- Update the status of the book in the Borrower table
+    UPDATE Borrower
+    SET Status = 'R'
+    WHERE Roll_no = p_Roll_no AND NameofBook = p_NameofBook;
+
+    -- If there is a fine, insert details into the Fine table
+    IF v_FineAmount > 0 THEN
+        INSERT INTO Fine (Roll_no, Date, Amt)
+        VALUES (p_Roll_no, CURDATE(), v_FineAmount);
+    END IF;
+
+EXCEPTION
+    -- Named exception handler for other exceptions
+    WHEN Fine_Exception THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Error calculating fine, invalid Roll_no or NameofBook';
+END $$
+
+DELIMITER ;

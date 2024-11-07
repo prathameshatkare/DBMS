@@ -1,0 +1,71 @@
+// Create the Order collection
+db.createCollection("Order");
+db.Order.insertMany([
+    { id: "A1", amount: 400, status: "P" },
+    { id: "B1", amount: 300, status: "D" },
+    { id: "A1", amount: 200, status: "F" },
+    { id: "C1", amount: 200, status: "F" },
+    { id: "B1", amount: 700, status: "P" },
+    { id: "B1", amount: 800, status: "P" }
+]);
+
+// 1. Find the sum of the amount of each customer whose status is "P"
+var mapSum = function() {
+  if (this.status === "P") {
+    emit(this.id, this.amount); // Emit customer id and the amount
+  }
+};
+
+var reduceSum = function(key, values) {
+  return Array.sum(values); // Sum the amounts for each customer
+};
+
+db.Order.mapReduce(mapSum, reduceSum, { out: { inline: 1 } });
+
+// 2. Find the average amount of each customer
+var mapAvg = function() {
+  emit(this.id, { totalAmount: this.amount, count: 1 }); // Emit totalAmount and count
+};
+
+var reduceAvg = function(key, values) {
+  var result = { totalAmount: 0, count: 0 };
+  values.forEach(function(value) {
+    result.totalAmount += value.totalAmount;
+    result.count += value.count;
+  });
+  return { totalAmount: result.totalAmount, count: result.count };
+};
+
+var finalizeAvg = function(key, reducedValue) {
+  reducedValue.averageAmount = reducedValue.totalAmount / reducedValue.count; // Calculate average
+  return reducedValue;
+};
+
+db.Order.mapReduce(mapAvg, reduceAvg, {
+  out: { inline: 1 },
+  finalize: finalizeAvg
+});
+
+// 3. Find the min amount of each customer
+var mapMin = function() {
+  emit(this.id, this.amount); // Emit customer id and the amount
+};
+
+var reduceMin = function(key, values) {
+  return Math.min.apply(null, values); // Find the minimum value from the list of amounts
+};
+
+db.Order.mapReduce(mapMin, reduceMin, { out: { inline: 1 } });
+
+// 4. Find the max amount of each customer whose status is "F"
+var mapMax = function() {
+  if (this.status === "F") {
+    emit(this.id, this.amount); // Emit customer id and the amount
+  }
+};
+
+var reduceMax = function(key, values) {
+  return Math.max.apply(null, values); // Find the maximum value from the list of amounts
+};
+
+db.Order.mapReduce(mapMax, reduceMax, { out: { inline: 1 } });

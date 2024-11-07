@@ -1,0 +1,44 @@
+// 1. Creating a sequence for generating employee numbers
+db.counters.insertOne({
+  _id: "empNoSeq",  // The name of the counter
+  seq: 0           // Start value of the counter
+});
+
+// Function to get the next employee number
+function getNextEmpNo() {
+  var sequenceDocument = db.counters.findAndModify({
+    query: { _id: "empNoSeq" },
+    update: { $inc: { seq: 1 } },
+    new: true
+  });
+  return sequenceDocument.seq;
+}
+
+// Example of inserting an employee using the counter
+db.Employee.insertOne({
+  Emp_No: getNextEmpNo(),
+  Emp_Name: "John Doe",
+  Designation: "Developer",
+  City: "Mumbai",
+  Salary: 45000,
+  Zipcode: "400001",
+  County: "Maharashtra"
+});
+
+// 2. Create an index on the County field
+db.Employee.createIndex({ County: 1 });
+
+// 3. Find the zip code where County = "071" and check if index is used
+db.Employee.find({ County: "071" }).toArray();
+db.Employee.find({ County: "071" }).explain("executionStats");
+
+// 4. Create a view to display employees with salary < 50000 and in Mumbai
+db.createCollection("MumbaiEmployees", {
+  viewOn: "Employee",
+  pipeline: [
+    { $match: { Salary: { $lt: 50000 }, City: "Mumbai" } }
+  ]
+});
+
+// Query the view
+db.MumbaiEmployees.find().toArray();

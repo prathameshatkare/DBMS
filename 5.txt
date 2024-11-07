@@ -1,0 +1,42 @@
+DELIMITER $$
+
+CREATE PROCEDURE proc_Grade()
+BEGIN
+    DECLARE v_Name VARCHAR(255);
+    DECLARE v_TotalMarks INT;
+    DECLARE v_Class VARCHAR(50);
+    DECLARE cur_Student CURSOR FOR SELECT name, total_marks FROM Stud_Marks;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+    DECLARE done INT DEFAULT 0;
+
+    -- Open cursor to loop through all records in Stud_Marks table
+    OPEN cur_Student;
+
+    read_loop: LOOP
+        FETCH cur_Student INTO v_Name, v_TotalMarks;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- Determine the class based on the total marks
+        IF v_TotalMarks BETWEEN 990 AND 1500 THEN
+            SET v_Class = 'Distinction';
+        ELSEIF v_TotalMarks BETWEEN 900 AND 989 THEN
+            SET v_Class = 'First Class';
+        ELSEIF v_TotalMarks BETWEEN 825 AND 899 THEN
+            SET v_Class = 'Higher Second Class';
+        ELSE
+            SET v_Class = 'Fail';
+        END IF;
+
+        -- Insert the result into the Result table
+        INSERT INTO Result (Roll, Name, Class)
+        VALUES ((SELECT COALESCE(MAX(Roll), 0) + 1 FROM Result), v_Name, v_Class);
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE cur_Student;
+END $$
+
+DELIMITER ;

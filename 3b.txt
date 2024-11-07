@@ -1,0 +1,38 @@
+-- 1. Find names and salary of employees who earn the same salary as the minimum salary for all departments
+SELECT E.First_name, E.Last_name, E.Salary
+FROM Employee E
+WHERE E.Salary = (
+    SELECT MIN(Salary)
+    FROM Employee
+);
+
+-- 2. Display employee ID, first name, last name, and salary of employees whose salary is above average for their departments
+SELECT E.Employee_id, E.First_name, E.Last_name, E.Salary
+FROM Employee E
+JOIN (
+    SELECT Department_id, AVG(Salary) AS Avg_Salary
+    FROM Employee
+    GROUP BY Department_id
+) DeptAvg ON E.Department_id = DeptAvg.Department_id
+WHERE E.Salary > DeptAvg.Avg_Salary;
+
+-- 3. Find employee ID, last name, manager ID, and manager's last name
+SELECT E.Employee_id, E.Last_name AS Employee_Name, 
+       E.Manager_id, M.Last_name AS Manager_Name
+FROM Employee E
+LEFT JOIN Employee M ON E.Manager_id = M.Employee_id;
+
+-- 4. Find names and hire date of employees who were hired after 'Jones'
+SELECT E.First_name, E.Last_name, E.Hire_date
+FROM Employee E
+WHERE E.Hire_date > (
+    SELECT Hire_date
+    FROM Employee
+    WHERE Last_name = 'Jones'
+);
+
+-- 5. Get department name and number of employees in each department
+SELECT D.Department_name, COUNT(E.Employee_id) AS Number_of_Employees
+FROM Departments D
+LEFT JOIN Employee E ON D.Department_id = E.Department_id
+GROUP BY D.Department_name;

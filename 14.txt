@@ -1,0 +1,65 @@
+// 11. Find details of all employees who work for company "IBM" and live in city "Pune".
+db.Employee.find({
+  company_name: "IBM",
+  city: "Pune"
+});
+
+// 12. Find names, and cities of all employees who work for "Infosys" or earn more than 30000.
+db.Employee.find({
+  $or: [
+    { company_name: "Infosys" },
+    { salary: { $gt: 30000 } }
+  },
+  employee_name: 1,
+  city: 1
+});
+
+// 13. Find all employees who are employees of "IBM" and not living in city "Mumbai".
+db.Employee.find({
+  company_name: "IBM",
+  city: { $ne: "Mumbai" }
+});
+
+// 14. Find company wise maximum salary.
+db.Employee.aggregate([
+  {
+    $group: {
+      _id: "$company_name",
+      max_salary: { $max: "$salary" }
+    }
+  }
+]);
+
+// 15. Find those companies whose employees earn higher salary than average salary at "IBM".
+db.Employee.aggregate([
+  // Step 1: Find the average salary at IBM
+  {
+    $match: { company_name: "IBM" }
+  },
+  {
+    $group: {
+      _id: "$company_name",
+      avg_salary_ibm: { $avg: "$salary" }
+    }
+  },
+  // Step 2: Find companies whose employees earn more than IBM's average salary
+  {
+    $lookup: {
+      from: "Employee",
+      localField: "avg_salary_ibm",
+      foreignField: "salary",
+      as: "companies_above_avg"
+    }
+  },
+  {
+    $match: {
+      "companies_above_avg.salary": { $gt: "$avg_salary_ibm" }
+    }
+  },
+  {
+    $project: {
+      company_name: 1,
+      avg_salary_ibm: 1
+    }
+  }
+]);

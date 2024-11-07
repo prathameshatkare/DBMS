@@ -1,0 +1,68 @@
+db.createCollection("books");
+db.books.insertMany([
+  {
+    title: "Introduction to MongoDB",
+    description: "A beginner's guide to MongoDB.",
+    by: "john",
+    url: "https://example.com/mongodb-intro",
+    tags: ["NoSQL", "Database", "MongoDB"],
+    likes: 120
+  },
+  {
+    title: "Advanced MongoDB",
+    description: "Dive deeper into MongoDB features.",
+    by: "alice",
+    url: "https://example.com/advanced-mongodb",
+    tags: ["NoSQL", "Database", "MongoDB", "Advanced"],
+    likes: 250
+  },
+  {
+    title: "Understanding JavaScript",
+    description: "Master JavaScript fundamentals.",
+    by: "john",
+    url: "https://example.com/js-fundamentals",
+    tags: ["Programming", "JavaScript"],
+    likes: 100
+  },
+  {
+    title: "Node.js Basics",
+    description: "Learn the basics of Node.js.",
+    by: "bob",
+    url: "https://example.com/nodejs-basics",
+    tags: ["Programming", "Node.js", "Backend"],
+    likes: 75
+  },
+  {
+    title: "MongoDB for Data Science",
+    description: "MongoDB usage in Data Science.",
+    by: "john",
+    url: "https://example.com/mongodb-data-science",
+    tags: ["NoSQL", "Database", "MongoDB", "Data Science"],
+    likes: 180
+  }
+]);
+db.books.insertOne({
+  title: "MongoDB Overview",
+  description: "A comprehensive overview of MongoDB.",
+  by: "john",
+  url: "https://example.com/mongodb-overview",
+  tags: ["Database", "MongoDB"],
+  likes: 190,
+  user_name: "jane_doe",
+  comments: "Excellent resource for beginners!"
+});
+db.books.find({
+  $or: [
+    { by: "john" },
+    { title: "mongodb" }
+  ]
+});
+db.books.find({
+  likes: { $gt: 150 }
+});
+db.books.updateOne(
+  { title: "mongodb" },
+  { $set: { title: "mongodb overview" } }
+);
+db.books.find({ by: "john" }).limit(2);
+db.books.find().sort({ likes: -1 });

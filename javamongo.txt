@@ -1,0 +1,202 @@
+// MongoDB Database Configuration
+package com.example.db;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoDatabase;
+
+public class MongoDBConnection {
+    private static final String CONNECTION_STRING = "mongodb://localhost:27017";
+    private static final String DATABASE_NAME = "your_database";
+    
+    private static MongoClient mongoClient;
+    private static MongoDatabase database;
+    
+    public static MongoDatabase getDatabase() {
+        if (database == null) {
+            mongoClient = MongoClients.create(CONNECTION_STRING);
+            database = mongoClient.getDatabase(DATABASE_NAME);
+        }
+        return database;
+    }
+    
+    public static void closeConnection() {
+        if (mongoClient != null) {
+            mongoClient.close();
+        }
+    }
+}
+
+// User Model Class
+package com.example.model;
+
+import org.bson.Document;
+import org.bson.types.ObjectId;
+
+public class User {
+    private ObjectId id;
+    private String name;
+    private String email;
+    private int age;
+
+    public User(String name, String email, int age) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
+    }
+
+    // Convert User to MongoDB Document
+    public Document toDocument() {
+        return new Document()
+                .append("name", name)
+                .append("email", email)
+                .append("age", age);
+    }
+
+    // Create User from MongoDB Document
+    public static User fromDocument(Document doc) {
+        User user = new User(
+            doc.getString("name"),
+            doc.getString("email"),
+            doc.getInteger("age")
+        );
+        user.setId(doc.getObjectId("_id"));
+        return user;
+    }
+
+    // Getters and Setters
+    public ObjectId getId() { return id; }
+    public void setId(ObjectId id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
+}
+
+// UserRepository - Handles MongoDB Operations
+package com.example.repository;
+
+import com.example.db.MongoDBConnection;
+import com.example.model.User;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.types.ObjectId;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class UserRepository {
+    private final MongoCollection<Document> collection;
+
+    public UserRepository() {
+        this.collection = MongoDBConnection.getDatabase().getCollection("users");
+    }
+
+    // Create a new user
+    public User createUser(User user) {
+        Document doc = user.toDocument();
+        collection.insertOne(doc);
+        user.setId(doc.getObjectId("_id"));
+        return user;
+    }
+
+    // Find user by ID
+    public User findById(ObjectId id) {
+        Document doc = collection.find(Filters.eq("_id", id)).first();
+        return doc != null ? User.fromDocument(doc) : null;
+    }
+
+    // Find user by email
+    public User findByEmail(String email) {
+        Document doc = collection.find(Filters.eq("email", email)).first();
+        return doc != null ? User.fromDocument(doc) : null;
+    }
+
+    // Get all users
+    public List<User> findAll() {
+        List<User> users = new ArrayList<>();
+        collection.find().forEach(doc -> users.add(User.fromDocument(doc)));
+        return users;
+    }
+
+    // Update user
+    public boolean updateUser(ObjectId id, User user) {
+        UpdateResult result = collection.updateOne(
+            Filters.eq("_id", id),
+            Updates.combine(
+                Updates.set("name", user.getName()),
+                Updates.set("email", user.getEmail()),
+                Updates.set("age", user.getAge())
+            )
+        );
+        return result.getModifiedCount() > 0;
+    }
+
+    // Delete user
+    public boolean deleteUser(ObjectId id) {
+        DeleteResult result = collection.deleteOne(Filters.eq("_id", id));
+        return result.getDeletedCount() > 0;
+    }
+
+    // Example query: Find users by age range
+    public List<User> findByAgeRange(int minAge, int maxAge) {
+        List<User> users = new ArrayList<>();
+        collection.find(
+            Filters.and(
+                Filters.gte("age", minAge),
+                Filters.lte("age", maxAge)
+            )
+        ).forEach(doc -> users.add(User.fromDocument(doc)));
+        return users;
+    }
+}
+
+// Example Usage
+package com.example;
+
+import com.example.model.User;
+import com.example.repository.UserRepository;
+import org.bson.types.ObjectId;
+
+public class MongoDBExample {
+    public static void main(String[] args) {
+        UserRepository userRepo = new UserRepository();
+
+        try {
+            // Create a new user
+            User newUser = new User("John Doe", "john@example.com", 30);
+            newUser = userRepo.createUser(newUser);
+            System.out.println("Created user with ID: " + newUser.getId());
+
+            // Find user by ID
+            User foundUser = userRepo.findById(newUser.getId());
+            System.out.println("Found user: " + foundUser.getName());
+
+            // Update user
+            foundUser.setAge(31);
+            boolean updated = userRepo.updateUser(foundUser.getId(), foundUser);
+            System.out.println("User updated: " + updated);
+
+            // Find users by age range
+            List<User> usersInRange = userRepo.findByAgeRange(25, 35);
+            System.out.println("Users aged 25-35: " + usersInRange.size());
+
+            // Delete user
+            boolean deleted = userRepo.deleteUser(foundUser.getId());
+            System.out.println("User deleted: " + deleted);
+
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Close MongoDB connection
+            MongoDBConnection.closeConnection();
+        }
+    }
+}

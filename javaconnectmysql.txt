@@ -1,0 +1,234 @@
+// DatabaseConfig.java
+package com.example.db;
+
+public class DatabaseConfig {
+    // Database configuration constants
+    public static final String URL = "jdbc:mysql://localhost:3306/your_database";
+    public static final String USER = "your_username";
+    public static final String PASSWORD = "your_password";
+    
+    // SQL Queries
+    public static final String INSERT_USER = "INSERT INTO users (name, email, age) VALUES (?, ?, ?)";
+    public static final String SELECT_ALL_USERS = "SELECT * FROM users";
+    public static final String SELECT_USER_BY_ID = "SELECT * FROM users WHERE id = ?";
+    public static final String UPDATE_USER = "UPDATE users SET name = ?, email = ?, age = ? WHERE id = ?";
+    public static final String DELETE_USER = "DELETE FROM users WHERE id = ?";
+}
+
+// User.java
+package com.example.model;
+
+public class User {
+    private int id;
+    private String name;
+    private String email;
+    private int age;
+
+    // Constructor
+    public User(int id, String name, String email, int age) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.age = age;
+    }
+
+    // Getters and setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+
+// DatabaseManager.java
+package com.example.db;
+
+import com.example.model.User;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class DatabaseManager {
+    private Connection connection;
+
+    // Initialize database connection
+    public void connect() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            connection = DriverManager.getConnection(
+                DatabaseConfig.URL,
+                DatabaseConfig.USER,
+                DatabaseConfig.PASSWORD
+            );
+            System.out.println("Database connected successfully!");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL JDBC Driver not found.", e);
+        }
+    }
+
+    // Close database connection
+    public void disconnect() throws SQLException {
+        if (connection != null && !connection.isClosed()) {
+            connection.close();
+            System.out.println("Database connection closed.");
+        }
+    }
+
+    // Create (Insert) a new user
+    public int createUser(User user) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(
+                DatabaseConfig.INSERT_USER, Statement.RETURN_GENERATED_KEYS)) {
+            
+            stmt.setString(1, user.getName());
+            stmt.setString(2, user.getEmail());
+            stmt.setInt(3, user.getAge());
+            
+            int affectedRows = stmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                throw new SQLException("Creating user failed, no rows affected.");
+            }
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
+                }
+            }
+        }
+    }
+
+    // Read all users
+    public List<User> getAllUsers() throws SQLException {
+        List<User> users = new ArrayList<>();
+        
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(DatabaseConfig.SELECT_ALL_USERS)) {
+            
+            while (rs.next()) {
+                User user = new User(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getString("email"),
+                    rs.getInt("age")
+                );
+                users.add(user);
+            }
+        }
+        return users;
+    }
+
+    // Read user by ID
+    public User getUserById(int id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(DatabaseConfig.SELECT_USER_BY_ID)) {
+            stmt.setInt(1, id);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new User(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("email"),
+                        rs.getInt("age")
+                    );
+                }
+                return null;
+            }
+        }
+    }
+
+    // Update user
+    public boolean updateUser(User user) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(DatabaseConfig.UPDATE_USER)) {
+            stmt.setString(1, user.getName());
+            stmt.setString(2, user.getEmail());
+            stmt.setInt(3, user.getAge());
+            stmt.setInt(4, user.getId());
+            
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+
+    // Delete user
+    public boolean deleteUser(int id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(DatabaseConfig.DELETE_USER)) {
+            stmt.setInt(1, id);
+            
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+}
+
+// Main.java
+package com.example;
+
+import com.example.db.DatabaseManager;
+import com.example.model.User;
+import java.sql.SQLException;
+
+public class Main {
+    public static void main(String[] args) {
+        DatabaseManager dbManager = new DatabaseManager();
+        
+        try {
+            // Connect to database
+            dbManager.connect();
+            
+            // Create a new user
+            User newUser = new User(0, "John Doe", "john@example.com", 25);
+            int userId = dbManager.createUser(newUser);
+            System.out.println("Created user with ID: " + userId);
+            
+            // Read user
+            User retrievedUser = dbManager.getUserById(userId);
+            System.out.println("Retrieved user: " + retrievedUser);
+            
+            // Update user
+            retrievedUser.setAge(26);
+            boolean updated = dbManager.updateUser(retrievedUser);
+            System.out.println("User updated: " + updated);
+            
+            // List all users
+            System.out.println("All users:");
+            dbManager.getAllUsers().forEach(System.out::println);
+            
+            // Delete user
+            boolean deleted = dbManager.deleteUser(userId);
+            System.out.println("User deleted: " + deleted);
+            
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                dbManager.disconnect();
+            } catch (SQLException e) {
+                System.err.println("Error closing connection: " + e.getMessage());
+            }
+        }
+    }
+}
+
+-- users.sql
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    age INT
+);

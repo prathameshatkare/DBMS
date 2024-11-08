@@ -1,4 +1,4 @@
--- Create Student Table
+
 CREATE TABLE Student (
     StudID INT,
     Name VARCHAR(50),
@@ -6,13 +6,13 @@ CREATE TABLE Student (
     Marks INT
 );
 
--- Insert Data into Student Table
+
 INSERT INTO Student (StudID, Name, Address, Marks) VALUES
 (1, 'Amit', 'Delhi', 91),
 (2, 'Sneha', 'Mumbai', 87),
 (3, 'Raj', 'Bangalore', 76);
 
--- Create Employee Table
+
 CREATE TABLE Employee (
     EmployeeID INT,
     Name VARCHAR(50),
@@ -22,13 +22,13 @@ CREATE TABLE Employee (
     Department VARCHAR(50)
 );
 
--- Insert Data into Employee Table
+
 INSERT INTO Employee (EmployeeID, Name, Address, Salary, DateOfJoining, Department) VALUES
 (201, 'Priya', 'Hyderabad', 60000.00, '2021-06-10', 'HR'),
 (202, 'Vikram', 'Chennai', 75000.00, '2020-01-05', 'Finance'),
 (203, 'Anjali', 'Pune', 50000.00, '2022-03-15', 'IT');
 
--- Create Weather Table
+
 CREATE TABLE Weather (
     CityID INT,
     CityName VARCHAR(50),
@@ -36,13 +36,13 @@ CREATE TABLE Weather (
     MaxTemp DECIMAL(5, 2)
 );
 
--- Insert Data into Weather Table
+
 INSERT INTO Weather (CityID, CityName, MinTemp, MaxTemp) VALUES
 (1, 'Delhi', 5.0, 30.0),
 (2, 'Mumbai', 20.0, 35.0),
 (3, 'Kolkata', 15.0, 32.0);
 
--- Alter Student and Employee tables to add NOT NULL constraint
+
 ALTER TABLE Student 
 MODIFY StudID INT NOT NULL, 
 MODIFY Name VARCHAR(50) NOT NULL,
@@ -57,49 +57,47 @@ MODIFY Salary DECIMAL(10, 2) NOT NULL,
 MODIFY DateOfJoining DATE NOT NULL,
 MODIFY Department VARCHAR(50) NOT NULL;
 
--- Add Primary Key to Student table
+
 ALTER TABLE Student
 ADD CONSTRAINT PK_Student PRIMARY KEY (StudID);
 
--- View for Employee Joining Information
+
 CREATE VIEW JoiningInfo AS
 SELECT EmployeeID, Name, DateOfJoining
 FROM Employee;
 
--- View for Student Marks Information
+
 CREATE VIEW MarksInfo AS
 SELECT StudID, Marks
 FROM Student;
 
--- Create Indexes on Primary Key columns
+
 CREATE INDEX idx_StudentID ON Student(StudID);
 CREATE INDEX idx_EmployeeID ON Employee(EmployeeID);
 CREATE INDEX idx_CityID ON Weather(CityID);
 
--- Rename Weather Table
+
 ALTER TABLE Weather RENAME TO WeatherData;
 
--- Drop CityName column from WeatherData Table
+
 ALTER TABLE WeatherData DROP COLUMN CityName;
 
--- Add Grade column to Student table
+
 ALTER TABLE Student ADD Grade VARCHAR(20);
 
--- Update Grade Data
+
 UPDATE Student 
 SET Grade = 'Distinction' 
 WHERE Marks >= 85;
 
--- View for Distinction Students
+
 CREATE VIEW DistinctionStudents AS
 SELECT StudID, Name, Marks, Grade
 FROM Student
 WHERE Grade = 'Distinction';
 
--- Create Sequence for StudID
 CREATE SEQUENCE StudID_seq
 START WITH 4
 INCREMENT BY 1;
 
--- Create Synonym for Employee Table
 CREATE SYNONYM Emp_Info FOR Employee;
